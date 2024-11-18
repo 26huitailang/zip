@@ -53,7 +53,17 @@ func TestOver65kFiles(t *testing.T) {
 func TestModTime(t *testing.T) {
 	var testTime = time.Date(2009, time.November, 10, 23, 45, 58, 0, time.UTC)
 	fh := new(FileHeader)
-	fh.SetModTime(testTime)
+	fh.SetModTime(testTime, nil)
+	outTime := fh.ModTime()
+	if !outTime.Equal(testTime) {
+		t.Errorf("times don't match: got %s, want %s", outTime, testTime)
+	}
+}
+
+func TestModTimeLocal(t *testing.T) {
+	var testTime = time.Date(2009, time.November, 10, 23, 45, 58, 0, time.Local)
+	fh := new(FileHeader)
+	fh.SetModTime(testTime, nil)
 	outTime := fh.ModTime()
 	if !outTime.Equal(testTime) {
 		t.Errorf("times don't match: got %s, want %s", outTime, testTime)
@@ -62,7 +72,7 @@ func TestModTime(t *testing.T) {
 
 func testHeaderRoundTrip(fh *FileHeader, wantUncompressedSize uint32, wantUncompressedSize64 uint64, t *testing.T) {
 	fi := fh.FileInfo()
-	fh2, err := FileInfoHeader(fi)
+	fh2, err := FileInfoHeader(fi, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -390,7 +400,7 @@ func TestHeaderInvalidTagAndSize(t *testing.T) {
 		Method: Deflate,
 		Extra:  []byte(ts.Format(time.RFC3339Nano)), // missing tag and len
 	}
-	h.SetModTime(ts)
+	h.SetModTime(ts, nil)
 
 	testInvalidHeader(&h, t)
 }

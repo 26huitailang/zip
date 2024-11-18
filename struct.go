@@ -133,13 +133,13 @@ func (fi headerFileInfo) Sys() interface{}   { return fi.fh }
 // Because os.FileInfo's Name method returns only the base name of
 // the file it describes, it may be necessary to modify the Name field
 // of the returned header to provide the full path name of the file.
-func FileInfoHeader(fi os.FileInfo) (*FileHeader, error) {
+func FileInfoHeader(fi os.FileInfo, loc *time.Location) (*FileHeader, error) {
 	size := fi.Size()
 	fh := &FileHeader{
 		Name:               fi.Name(),
 		UncompressedSize64: uint64(size),
 	}
-	fh.SetModTime(fi.ModTime())
+	fh.SetModTime(fi.ModTime(), loc)
 	fh.SetMode(fi.Mode())
 	if fh.UncompressedSize64 > uint32max {
 		fh.UncompressedSize = uint32max
@@ -183,8 +183,12 @@ func msDosTimeToTime(dosDate, dosTime uint16) time.Time {
 // timeToMsDosTime converts a time.Time to an MS-DOS date and time.
 // The resolution is 2s.
 // See: http://msdn.microsoft.com/en-us/library/ms724274(v=VS.85).aspx
-func timeToMsDosTime(t time.Time) (fDate uint16, fTime uint16) {
-	t = t.In(time.UTC)
+func timeToMsDosTime(t time.Time, loc *time.Location) (fDate uint16, fTime uint16) {
+	if loc == nil {
+		t = t.In(time.UTC)
+	} else {
+		t = t.In(loc)
+	}
 	fDate = uint16(t.Day() + int(t.Month())<<5 + (t.Year()-1980)<<9)
 	fTime = uint16(t.Second()/2 + t.Minute()<<5 + t.Hour()<<11)
 	return
@@ -198,8 +202,8 @@ func (h *FileHeader) ModTime() time.Time {
 
 // SetModTime sets the ModifiedTime and ModifiedDate fields to the given time in UTC.
 // The resolution is 2s.
-func (h *FileHeader) SetModTime(t time.Time) {
-	h.ModifiedDate, h.ModifiedTime = timeToMsDosTime(t)
+func (h *FileHeader) SetModTime(t time.Time, loc *time.Location) {
+	h.ModifiedDate, h.ModifiedTime = timeToMsDosTime(t, loc)
 }
 
 const (
